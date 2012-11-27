@@ -76,7 +76,15 @@ public class DBuffer {
 	 * count are for the buffer array, not the DBuffer. Upon an error, it should
 	 * return -1, otherwise return number of bytes read.
 	 */
-	public abstract int read(byte[] buffer, int startOffset, int count);
+	public synchronized int read(byte[] buffer, int startOffset, int count)
+    {
+        if (!checkValid())
+            return -1;
+        for (int i = 0; i < count; i++) {
+            byte[i] = myBuffer[startOffset + i];
+        }
+        return count;
+    }
 
 	/*
 	 * writes into the DBuffer from the contents of buffer[] array. startOffset
@@ -84,7 +92,14 @@ public class DBuffer {
 	 * Upon an error, it should return -1, otherwise return number of bytes
 	 * written.
 	 */
-	public abstract int write(byte[] buffer, int startOffset, int count);
+	public synchronized int write(byte[] buffer, int startOffset, int count)
+    {
+        myClean = false;
+        for (int i = 0; i < count; i++) {
+            myBuffer[startOffset + i] = buffer[i];
+        }
+        return count;
+    }
 
 	/* An upcall from VirtualDisk layer to inform the completion of an IO operation */
 	public synchronized void ioComplete()
