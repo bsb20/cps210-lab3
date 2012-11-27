@@ -1,33 +1,36 @@
 package dblockcache;
 
+import common.Constants;
 import common.Constants.DiskOperationType;
 
 
 public class DBuffer {
-    private int myId;
+    private int myBlockId;
     private VirtualDisk myVirtualDisk;
     private int myIoOperations;
     private boolean myValid, myClean;
+    private byte[] myBuffer;
 
 
-    public DBuffer(int id, VirtualDisk virtualDisk)
+    public DBuffer(int blockId, VirtualDisk virtualDisk)
     {
-        myId = id;
+        myBlockId = blockId;
         myVirtualDisk = virtualDisk;
         myIoOperations = 0;
         myValid = false;
         myClean = true;
+        myBuffer = new byte[Constants.BLOCK_SIZE];
     }
 
 	/* Start an asynchronous fetch of associated block from the volume */
-	public void startFetch()
+	public synchronized void startFetch()
     {
         myIoOperations++;
         myVirtualDisk.startRequest(this, DiskOperationType.READ);
     }
 
 	/* Start an asynchronous write of buffer contents to block on volume */
-	public void startPush()
+	public synchronized void startPush()
     {
         myIoOperations++;
         myVirtualDisk.startRequest(this, DiskOperationType.WRITE);
@@ -40,7 +43,12 @@ public class DBuffer {
     }
 
 	/* Wait until the buffer is free */
-	public abstract boolean waitValid();
+	public synchronized void waitValid()
+    {
+        while (!myValid) {
+            wait();
+        }
+    }
 
 	/* Check whether the buffer is dirty, i.e., has modified data to be written back */
 	public boolean checkClean()
@@ -49,7 +57,12 @@ public class DBuffer {
     }
 
 	/* Wait until the buffer is clean, i.e., until a push operation completes */
-	public abstract boolean waitClean();
+	public synchronized boolean waitClean()
+    {
+        while (!myClean) {
+            wait();
+        }
+    }
 
 	/* Check if buffer is evictable: not evictable if I/O in progress, or buffer is held */
 	public boolean isBusy()
@@ -74,11 +87,21 @@ public class DBuffer {
 	public abstract int write(byte[] buffer, int startOffset, int count);
 
 	/* An upcall from VirtualDisk layer to inform the completion of an IO operation */
-	public abstract void ioComplete();
+	public synchronized void ioComplete()
+    {
+        myIoOperations--;
+        notifyAll();
+    }
 
 	/* An upcall from VirtualDisk layer to fetch the blockID associated with a startRequest operation */
-	public abstract int getBlockID();
+	public int getBlockID()
+    {
+        return myBlockId;
+    }
 
 	/* An upcall from VirtualDisk layer to fetch the buffer associated with DBuffer object*/
-	public abstract byte[] getBuffer(); 
+	public byte[] getBuffer()
+    {
+        return myBuffer;
+    }
 }
