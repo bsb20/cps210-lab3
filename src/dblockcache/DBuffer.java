@@ -2,13 +2,15 @@ package dblockcache;
 
 import common.Constants;
 import common.Constants.DiskOperationType;
+import virtualdisk.VirtualDisk;
 
 
-public class DBuffer {
+public class DBuffer
+{
     private int myBlockId;
     private VirtualDisk myVirtualDisk;
     private int myIoOperations;
-    private boolean myValid, myClean;
+    private boolean myValid, myClean, myHeld;
     private byte[] myBuffer;
 
 
@@ -19,6 +21,7 @@ public class DBuffer {
         myIoOperations = 0;
         myValid = false;
         myClean = true;
+        myHeld = false;
         myBuffer = new byte[Constants.BLOCK_SIZE];
     }
 
@@ -46,7 +49,10 @@ public class DBuffer {
 	public synchronized void waitValid()
     {
         while (!myValid) {
-            wait();
+            try {
+                wait();
+            }
+            catch (InterruptedException e) {}
         }
     }
 
@@ -57,10 +63,13 @@ public class DBuffer {
     }
 
 	/* Wait until the buffer is clean, i.e., until a push operation completes */
-	public synchronized boolean waitClean()
+	public synchronized void waitClean()
     {
         while (!myClean) {
-            wait();
+            try {
+                wait();
+            }
+            catch (InterruptedException e) {}
         }
     }
 
@@ -81,7 +90,7 @@ public class DBuffer {
         if (!checkValid())
             return -1;
         for (int i = 0; i < count; i++) {
-            byte[i] = myBuffer[startOffset + i];
+            buffer[i] = myBuffer[startOffset + i];
         }
         return count;
     }
@@ -118,5 +127,27 @@ public class DBuffer {
 	public byte[] getBuffer()
     {
         return myBuffer;
+    }
+
+    public synchronized void acquire()
+    {
+        while (myHeld) {
+            try {
+                wait();
+            }
+            catch (InterruptedException e) {}
+        }
+        myHeld = true;
+    }
+
+    public boolean isHeld()
+    {
+        return myHeld;
+    }
+
+    public synchronized void release()
+    {
+        myHeld = false;
+        notify();
     }
 }
