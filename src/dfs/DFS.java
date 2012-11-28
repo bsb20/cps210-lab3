@@ -79,6 +79,7 @@ public abstract class DFS {
 		
 		DBuffer blockToParse = myDBCache.getBlock(dFID);
 		blockToParse.read(buffer, 0, Constants.BLOCK_SIZE);
+		blockToParse.release();
 		for (int loc=0; loc<Constants.BLOCK_SIZE; loc += 4)
 			parsedINode.add(java.nio.ByteBuffer.wrap(Arrays.copyOfRange(buffer, loc, loc+4)).getInt());
 		
@@ -124,10 +125,17 @@ public abstract class DFS {
 	 * buffer offset startOffset; at most count bytes are transferred
 	 */
 	public int read(int dFID, byte[] buffer, int startOffset, int count){
-		DBuffer toRead = myDBCache.getBlock(dFID);
-		toRead.read(buffer, startOffset, count);
-		myDBCache.releaseBlock(toRead);
-		return count;
+		ArrayList<Integer> iNodeInfo = parseINode(dFID);
+		int bytesRead = 0;
+		
+		for (int i = 1; i<iNodeInfo.size(); i++){
+			DBuffer toRead = myDBCache.getBlock(dFID);
+			bytesRead += toRead.read(buffer, startOffset + bytesRead, count-bytesRead);
+			toRead.release();	
+			if (bytesRead >= count)
+				break;
+		}
+		return bytesRead;
 	}
 		
 	
