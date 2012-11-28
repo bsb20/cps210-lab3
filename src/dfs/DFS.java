@@ -47,18 +47,6 @@ public abstract class DFS {
 	}
 	*/
 	
-	private ArrayList<Integer> parseINode(int dFID){
-		byte[] buffer = new byte[Constants.BLOCK_SIZE];
-		ArrayList<Integer> parsedINode = new ArrayList<Integer>();
-		
-		DBuffer blockToParse = myDBCache.getBlock(dFID);
-		blockToParse.read(buffer, 0, Constants.BLOCK_SIZE);
-		for (int loc=0; loc<Constants.BLOCK_SIZE; loc += 4)
-			parsedINode.add(java.nio.ByteBuffer.wrap(Arrays.copyOfRange(buffer, loc, loc+4)).getInt());
-		
-		return parsedINode;
-	}
-	
 	//scan VDF to form the metadata stuctures
 	private void initializeMData(){
 		formatFreeBlocks(); //set free block list to all free blocks
@@ -84,6 +72,18 @@ public abstract class DFS {
 			myFreeBlocks.add(i);
 		}
 	}
+	
+	private ArrayList<Integer> parseINode(int dFID){
+		byte[] buffer = new byte[Constants.BLOCK_SIZE];
+		ArrayList<Integer> parsedINode = new ArrayList<Integer>();
+		
+		DBuffer blockToParse = myDBCache.getBlock(dFID);
+		blockToParse.read(buffer, 0, Constants.BLOCK_SIZE);
+		for (int loc=0; loc<Constants.BLOCK_SIZE; loc += 4)
+			parsedINode.add(java.nio.ByteBuffer.wrap(Arrays.copyOfRange(buffer, loc, loc+4)).getInt());
+		
+		return parsedINode;
+	}
 
 	/* creates a new DFile and returns the DFileID, which is useful to uniquely identify the DFile*/
 	public int createDFile(){
@@ -95,20 +95,29 @@ public abstract class DFS {
 	
 	/* destroys the file specified by the DFileID */
 	public void destroyDFile(int dFID){
-		byte[] buffer = new byte[Constants.BLOCK_SIZE];
-		DBuffer iNodeToKill = myDBCache.getBlock(dFID);
-		iNodeToKill.read(buffer, 0, Constants.BLOCK_SIZE);
-		//ArrayList<Integer> nodeInts = parseINode(iNodeBuff);
-		for (int i=1; i < nodeInts.size(); i++)
-			 myFreeBlocks.remove(myFreeBlocks.indexOf(nodeInts.get(i)));		 
+		ArrayList<Integer> iNodeInfo = parseINode(dFID);
+		
+		formatBlock(dFID);
 		myFreeINodes.remove(myFreeINodes.indexOf(dFID));
 		myDFileList.remove(myDFileList.indexOf(dFID));
+		
+		for (int i=1; i < iNodeInfo.size(); i++){
+			 myFreeBlocks.remove(myFreeBlocks.indexOf(iNodeInfo.get(i)));
+			 formatBlock(iNodeInfo.get(i));
+		}
 	}
 
-	private ArrayList<Integer> parseINode(DBuffer inode) {
-			//break up inode - seperate into
-		return null;
+	/*Zeros out a block*/
+	private void formatBlock(int dFID) {
+		byte[] zeroBuffer = new byte[Constants.BLOCK_SIZE];
+		for (byte b: zeroBuffer){
+			zeroBuffer[b] = 0;
+		}
+		DBuffer iNodeToKill = myDBCache.getBlock(dFID);
+		iNodeToKill.write(zeroBuffer, 0, Constants.BLOCK_SIZE);
+		iNodeToKill.release();
 	}
+
 
 	/*
 	 * reads the file dfile named by DFileID into the buffer starting from the
