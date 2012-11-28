@@ -25,7 +25,7 @@ public abstract class DFS {
 	DFS(String volName, boolean format) {
 		myVolName = volName;
 		myFormat = format;
-		myDBCache = new DBufferCache(Constants.CACHE_SIZE, new VirtualDisk(myVolName, format));
+		myDBCache = new DBufferCache(Constants.CACHE_SIZE, new VirtualDisk(myVolName, format));//this must be wrong since need VDF to be maintained session to session?
 		initializeMData();//needs implementation
 	}
 	
@@ -49,7 +49,7 @@ public abstract class DFS {
 	
 	//scan VDF to form the metadata stuctures
 	private void initializeMData(){
-		formatFreeBlocks(); //set free block list to all free blocks
+		formatFreeBlockList(); //set free block list to all free blocks
 		
 		for (int i=0; i<Constants.NUM_OF_INODES; i++){
 			ArrayList<Integer> iNodeInfo = parseINode(i);
@@ -67,7 +67,7 @@ public abstract class DFS {
 
 	}
 	
-	private void formatFreeBlocks() {
+	private void formatFreeBlockList() {
 		for (int i = Constants.NUM_OF_INODES+1; i<Constants.NUM_OF_BLOCKS; i++){
 			myFreeBlocks.add(i);
 		}
@@ -145,12 +145,8 @@ public abstract class DFS {
 	
 	/* returns the size in bytes of the file indicated by DFileID. */
 	public int sizeDFile(int dFID){
-		byte[] sizeBytes = new byte[4];
-		DBuffer toSize = myDBCache.getBlock(dFID);
-		toSize.read(sizeBytes, 0, 4);
-		int size = java.nio.ByteBuffer.wrap(sizeBytes).getInt();
-		
-		return size;
+		ArrayList<Integer> iNodeInfo = parseINode(dFID);
+		return iNodeInfo.get(0);
 	}
 
 	/* 
