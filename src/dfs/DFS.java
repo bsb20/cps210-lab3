@@ -41,11 +41,11 @@ public abstract class DFS {
 	 * If format is true, the system should format the underlying disk contents,
 	 * i.e., initialize to empty. On success returns true, else return false.
 	 */
-	/*
+	
 	public boolean format(){
 		return false; //Don't think this is necessary with the VirtualDisk implementation that formatstores at bootup. 
 	}
-	*/
+	
 	
 	//scan VDF to form the metadata stuctures
 	private void initializeMData(){
@@ -145,6 +145,11 @@ public abstract class DFS {
 	 */
 	public int write(int dFID, byte[] buffer, int startOffset, int count){
 		sortMetadata();
+		ArrayList<Integer> iNodeInfo = parseINode(dFID);
+		int bytesWritten;
+		
+		DBuffer lastFileBlock = myDBCache.getBlock(iNodeInfo.get(iNodeInfo.size()-1));
+		if (lastFileBlock.)
 		DBuffer toWriteINode = myDBCache.getBlock(dFID);	
 		toWrite.write(buffer, startOffset, count);
 		myDBCache.releaseBlock(toWrite);
