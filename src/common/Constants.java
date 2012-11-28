@@ -8,6 +8,7 @@ public class Constants {
 	public static final int NUM_OF_BLOCKS = 16384; // 2^14
 	public static final int BLOCK_SIZE = 1024; // 1kB
 	public static final int NUM_OF_INODES = 512; //max of 512 files 
+	public static final int CACHE_SIZE = 1024; //guess from Ian 
 	/* DStore Operation types */
 	public enum DiskOperationType {
 		READ, WRITE
