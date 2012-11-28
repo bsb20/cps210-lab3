@@ -104,7 +104,7 @@ public abstract class DFS {
 		
 		for (int i=1; i < iNodeInfo.size(); i++){
 			 myFreeBlocks.remove(myFreeBlocks.indexOf(iNodeInfo.get(i)));
-			 formatBlock(iNodeInfo.get(i));
+			 formatBlock(iNodeInfo.get(i));	
 		}
 	}
 
@@ -144,11 +144,11 @@ public abstract class DFS {
 	 * buffer offset startOffsetl at most count bytes are transferred
 	 */
 	public int write(int dFID, byte[] buffer, int startOffset, int count){
+		sortMetadata();
 		DBuffer toWriteINode = myDBCache.getBlock(dFID);	
 		toWrite.write(buffer, startOffset, count);
 		myDBCache.releaseBlock(toWrite);
 		return count;
-		
 	}
 	
 	/* returns the size in bytes of the file indicated by DFileID. */
