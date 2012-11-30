@@ -71,6 +71,9 @@ public abstract class DBufferCache
         for (DBuffer block : myBlocks) {
             if (!block.isHeld() && !block.isBusy()) {
                 myBlocks.remove(block);
+                if (!block.checkClean()) {
+                    block.startPush();
+                }
                 return;
             }
         }

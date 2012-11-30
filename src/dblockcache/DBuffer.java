@@ -89,10 +89,11 @@ public class DBuffer
     {
         if (!checkValid())
             return -1;
-        for (int i = 0; i < count; i++) {
-            buffer[i] = myBuffer[startOffset + i];
+        int size = count > Constants.BLOCK_SIZE ? Constants.BLOCK_SIZE : count;
+        for (int i = 0; i < size; i++) {
+            buffer[startOffset + i] = myBuffer[i];
         }
-        return count;
+        return size;
     }
 
 	/*
@@ -104,10 +105,11 @@ public class DBuffer
 	public synchronized int write(byte[] buffer, int startOffset, int count)
     {
         myClean = false;
-        for (int i = 0; i < count; i++) {
-            myBuffer[startOffset + i] = buffer[i];
+        int size = count > Constants.BLOCK_SIZE ? Constants.BLOCK_SIZE : count;
+        for (int i = 0; i < size; i++) {
+            myBuffer[i] = buffer[startOffset + i];
         }
-        return count;
+        return size;
     }
 
 	/* An upcall from VirtualDisk layer to inform the completion of an IO operation */
