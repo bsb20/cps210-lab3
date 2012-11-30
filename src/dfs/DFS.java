@@ -32,14 +32,12 @@ public abstract class DFS {
 			myDBCache = new DBufferCache(Constants.CACHE_SIZE, new VirtualDisk(
 					myVolName, format));
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}// this must be wrong since need VDF to be maintained session to
 			// session?
-		initializeMData();// needs implementation
+		initializeMData();
 	}
 
 	DFS(boolean format) {
@@ -144,7 +142,7 @@ public abstract class DFS {
 		int bytesRead = 0;
 
 		for (int i = 1; i < iNodeInfo.size(); i++) {
-			DBuffer toRead = myDBCache.getBlock(dFID);
+			DBuffer toRead = myDBCache.getBlock(iNodeInfo.get(1));
 			bytesRead += toRead.read(buffer, startOffset + bytesRead, count
 					- bytesRead);
 			toRead.release();
