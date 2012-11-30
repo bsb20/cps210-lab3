@@ -6,7 +6,7 @@ import java.util.LinkedList;
 import virtualdisk.VirtualDisk;
 
 
-public abstract class DBufferCache
+public class DBufferCache
 {
     private int myCacheSize;
     private List<DBuffer> myBlocks;
@@ -83,5 +83,5 @@ public abstract class DBufferCache
 	 * sync() writes back all dirty blocks to the volume and wait for completion.
 	 * The sync() method should maintain clean block copies in DBufferCache.
 	 */
-	public abstract void sync();
+	public void sync(){};
 }

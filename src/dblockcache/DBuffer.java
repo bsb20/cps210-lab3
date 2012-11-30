@@ -1,5 +1,7 @@
 package dblockcache;
 
+import java.io.IOException;
+
 import common.Constants;
 import common.Constants.DiskOperationType;
 import virtualdisk.VirtualDisk;
@@ -29,14 +31,30 @@ public class DBuffer
 	public synchronized void startFetch()
     {
         myIoOperations++;
-        myVirtualDisk.startRequest(this, DiskOperationType.READ);
+        try {
+			myVirtualDisk.startRequest(this, DiskOperationType.READ);
+		} catch (IllegalArgumentException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
     }
 
 	/* Start an asynchronous write of buffer contents to block on volume */
 	public synchronized void startPush()
     {
         myIoOperations++;
-        myVirtualDisk.startRequest(this, DiskOperationType.WRITE);
+        try {
+			myVirtualDisk.startRequest(this, DiskOperationType.WRITE);
+		} catch (IllegalArgumentException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
     }
 
 	/* Check whether the buffer has valid data */ 
