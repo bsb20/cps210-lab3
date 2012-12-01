@@ -23,20 +23,21 @@ public class DFS {
 	private TreeSet<Integer> myFreeINodes, myFreeBlocks;
 	private TreeMap<DFileID, LockState> myDFiles;
 	private DBufferCache myDBCache;
+    private VirtualDisk myVirtualDisk;
 
 
 	public DFS(String volName, boolean format) {
 		myVolName = volName;
 		try {
-			myDBCache = new DBufferCache(Constants.CACHE_SIZE,
-                                         new VirtualDisk(myVolName, format));
+            myVirtualDisk = new VirtualDisk(myVolName, format);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}// this must be wrong since need VDF to be maintained session to
 			// session?
-		initializeMData();
+        myDBCache = new DBufferCache(Constants.CACHE_SIZE, myVirtualDisk);
+        System.out.println("Made a $$");
 	}
 
 	public DFS(boolean format) {
@@ -46,6 +47,21 @@ public class DFS {
 	public DFS() {
 		this(Constants.vdiskName, false);
 	}
+
+    public void init() {
+		initializeMData();
+        Thread worker = new Thread() {
+                public void run() {
+                    try {
+						myVirtualDisk.processAllTheRequests();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+                }
+            };
+        worker.start();
+    }
 
 	/*
 	 * If format is true, the system should format the underlying disk contents,

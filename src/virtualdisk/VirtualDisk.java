@@ -52,8 +52,6 @@ public class VirtualDisk implements IVirtualDisk {
 		}
 		/* Other methods as required */
 		myRequestQueue = new LinkedList<Pair>();
-		//PROCESS ALL THE REQUESTS!
-		processAllTheRequests();
 	}
 
 	public VirtualDisk(boolean format) throws FileNotFoundException,
@@ -130,7 +128,7 @@ public class VirtualDisk implements IVirtualDisk {
 		_file.write(buf.getBuffer(), 0, Constants.BLOCK_SIZE);
 	}
 
-	private void processAllTheRequests() throws IOException {
+	public void processAllTheRequests() throws IOException {
 		while (true) {
 			Pair next;
 			synchronized (this) {
