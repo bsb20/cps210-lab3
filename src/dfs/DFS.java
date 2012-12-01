@@ -96,17 +96,10 @@ public class DFS {
 
 	/* destroys the file specified by the DFileID */
 	public void destroyDFile(DFileID dFID) {
-		ArrayList<Integer> iNodeInfo = parseINode(dFID);
-
-		formatBlock(dFID.id());
-		myFreeINodes.remove(dFID);
         acquireWriteLock(dFID);
+		formatINode(dFID);
 		myDFiles.remove(dFID);
         releaseWriteLock(dFID);
-		for (int i = 1; i < iNodeInfo.size(); i++) {
-			myFreeBlocks.remove(iNodeInfo.get(i));
-			formatBlock(iNodeInfo.get(i));
-		}
 	}
 
 	/*
@@ -195,13 +188,14 @@ public class DFS {
 	}
 
 	/* Zeros out a block */
-	private void formatBlock(int dFID) {
-		byte[] zeroBuffer = new byte[Constants.BLOCK_SIZE];
-		for (byte b : zeroBuffer) {
-			zeroBuffer[b] = 0;
+	private void formatINode(DFileID dFID) {
+		DBuffer iNodeToKill = myDBCache.getBlock(dFID.block());
+		byte[] blockData= new byte[Constants.BLOCK_SIZE];
+		iNodeToKill.read(blockData, 0, Constants.BLOCK_SIZE);
+		for(int i=0; i<Constants.INODE_SIZE; i++){
+			blockData[i+dFID.offset()]=0;
 		}
-		DBuffer iNodeToKill = myDBCache.getBlock(dFID);
-		iNodeToKill.write(zeroBuffer, 0, Constants.BLOCK_SIZE);
+		iNodeToKill.write(blockData, 0, Constants.BLOCK_SIZE);
 		myDBCache.releaseBlock(iNodeToKill);
 	}
 
