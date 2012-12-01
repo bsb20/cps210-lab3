@@ -88,7 +88,7 @@ public class DBufferCache
             block.acquire();
             if (block.checkValid() && block.checkClean()) {
                 block.startPush();
-                waitClean();
+                block.waitClean();
             }
             block.release();
         }

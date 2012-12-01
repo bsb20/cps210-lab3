@@ -16,16 +16,16 @@ public class DFileID
             // First block may contain disk metadata
             return 0;
         }
-        else if (_dFID <= NUM_OF_INODES) {
+        else if (_dFID <= Constants.NUM_OF_INODES) {
             // Multiple inodes share a block starting at block 1
-            return (_dFID - 1) * INODE_SIZE / BLOCK_SIZE + 1;
+            return (_dFID - 1) * Constants.INODE_SIZE / Constants.BLOCK_SIZE + 1;
         }
         else {
             // Regular file blocks take up full block
             return 1 + // First block is metadata
                 (Constants.NUM_OF_INODES * Constants.INODE_SIZE /
                  Constants.BLOCK_SIZE) +  // Number of inode blocks
-                (_dFID - NUM_OF_INODES - 1);
+                (_dFID - Constants.NUM_OF_INODES - 1);
         }
     }
 
@@ -35,13 +35,16 @@ public class DFileID
             // First block may contain disk metadata
             return 0;
         }
-        else if (_dFID <= NUM_OF_INODES) {
+        else if (_dFID <= Constants.NUM_OF_INODES) {
             // Multiple inodes share a block starting at block 1
-            return (_dFID - 1) * INODE_SIZE % BLOCK_SIZE;
+            return (_dFID - 1) * Constants.INODE_SIZE % Constants.BLOCK_SIZE;
         }
         else {
             // Regular file blocks take up full block
             return 0;
         }
+    }
+    public int id(){
+    	return _dFID;
     }
 }

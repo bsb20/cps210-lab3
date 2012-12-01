@@ -102,7 +102,7 @@ public abstract class DFS {
 	 */
 	public synchronized int createDFile() {
 		sortMetadata();
-		DFileID newFile = DFileID(myFreeINodes.get(0));
+		DFileID newFile = new DFileID(myFreeINodes.get(0));
 		myFreeINodes.remove(0);
 		byte[] buffer = new byte[Constants.BLOCK_SIZE];
 		DBuffer container = myDBCache.getBlock(newFile.block());
@@ -123,7 +123,7 @@ public abstract class DFS {
 		container=myDBCache.getBlock(newFile.block());
 		container.write(buffer, 0, Constants.BLOCK_SIZE);
 		container.release();
-		return DFileID.id();
+		return newFile.id();
 	}
 
 	/* destroys the file specified by the DFileID */
