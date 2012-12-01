@@ -12,13 +12,13 @@ import java.util.List;
 import virtualdisk.VirtualDisk;
 
 import common.Constants;
+import common.DFileID;
 
 import dblockcache.DBuffer;
 import dblockcache.DBufferCache;
 
 public abstract class DFS {
 
-	private boolean myFormat;
 	private String myVolName;
 	private ArrayList<Integer> myFreeINodes;
 	private ArrayList<Integer> myFreeBlocks;
@@ -27,7 +27,6 @@ public abstract class DFS {
 
 	DFS(String volName, boolean format) {
 		myVolName = volName;
-		myFormat = format;
 		try {
 			myDBCache = new DBufferCache(Constants.CACHE_SIZE, new VirtualDisk(
 					myVolName, format));
@@ -86,11 +85,11 @@ public abstract class DFS {
 	private ArrayList<Integer> parseINode(int dFID) {
 		byte[] buffer = new byte[Constants.BLOCK_SIZE];
 		ArrayList<Integer> parsedINode = new ArrayList<Integer>();
-
-		DBuffer blockToParse = myDBCache.getBlock(dFID);
+		DBuffer blockToParse = myDBCache.getBlock((dFID * Constants.INODE_SIZE)
+				/ Constants.BLOCK_SIZE);
 		blockToParse.read(buffer, 0, Constants.BLOCK_SIZE);
 		blockToParse.release();
-		for (int loc = 0; loc < Constants.BLOCK_SIZE; loc += 4)
+		for (int loc = (dFID * Constants.INODE_SIZE) % Constants.BLOCK_SIZE; loc < Constants.BLOCK_SIZE; loc += 4)
 			parsedINode.add(ByteBuffer.wrap(
 					Arrays.copyOfRange(buffer, loc, loc + 4)).getInt());
 
@@ -103,9 +102,28 @@ public abstract class DFS {
 	 */
 	public synchronized int createDFile() {
 		sortMetadata();
-		int DFileID = myFreeINodes.get(0);
+		DFileID newFile = DFileID(myFreeINodes.get(0));
 		myFreeINodes.remove(0);
-		return DFileID;
+		byte[] buffer = new byte[Constants.BLOCK_SIZE];
+		DBuffer container = myDBCache.getBlock(newFile.block());
+		container.read(buffer, 0, Constants.BLOCK_SIZE);
+		container.release();
+		ByteBuffer b = ByteBuffer.allocate(Constants.INODE_SIZE);
+		int nextBlock = myFreeBlocks.get(0);
+		myFreeBlocks.remove(0);
+		b.putInt(1);
+		b.putInt(nextBlock);
+		for (int i = 0; i < Constants.INODE_SIZE - 8; i += 4) {
+			b.putInt(0);
+		}
+		byte[] newINode = b.array();
+		for (int j = 0; j < Constants.INODE_SIZE; j++) {
+			buffer[j + newFile.offset()] = newINode[j];
+		}
+		container=myDBCache.getBlock(newFile.block());
+		container.write(buffer, 0, Constants.BLOCK_SIZE);
+		container.release();
+		return DFileID.id();
 	}
 
 	/* destroys the file specified by the DFileID */
@@ -158,7 +176,7 @@ public abstract class DFS {
 	 */
 	public int write(int dFID, byte[] buffer, int startOffset, int count) {
 		sortMetadata();
-		if(myFreeBlocks.size()==0){
+		if (myFreeBlocks.size() == 0) {
 			System.out.println("VOLUME SIZE EXCEEDED");
 			return -1;
 		}
@@ -172,26 +190,27 @@ public abstract class DFS {
 				nextBlock = myDBCache.getBlock(iNodeInfo.get(vBlockNumber));
 				vBlockNumber++;
 			} else {
-					DBuffer iNode = myDBCache.getBlock(dFID);
-					ByteBuffer b = ByteBuffer.allocate(Constants.BLOCK_SIZE);
-					int nextPBlockNumber;
-					synchronized (this) {
-						nextPBlockNumber = myFreeBlocks.get(0);
-						myFreeBlocks.remove(0);
-					}
-					for(int i:iNodeInfo)
-						b.putInt(i);
-					try{
-					b.putInt(nextPBlockNumber);}
-					catch(BufferOverflowException e){
-						System.out.println("MAX FILE SIZE EXCEEDED");
-						return -1;
-					}
-					iNode.write(b.array(), 0, Constants.BLOCK_SIZE);
-					iNode.release();
-					nextBlock=myDBCache.getBlock(nextPBlockNumber);
+				DBuffer iNode = myDBCache.getBlock(dFID);
+				ByteBuffer b = ByteBuffer.allocate(Constants.BLOCK_SIZE);
+				int nextPBlockNumber;
+				synchronized (this) {
+					nextPBlockNumber = myFreeBlocks.get(0);
+					myFreeBlocks.remove(0);
+				}
+				for (int i : iNodeInfo)
+					b.putInt(i);
+				try {
+					b.putInt(nextPBlockNumber);
+				} catch (BufferOverflowException e) {
+					System.out.println("MAX FILE SIZE EXCEEDED");
+					return -1;
+				}
+				iNode.write(b.array(), 0, Constants.BLOCK_SIZE);
+				iNode.release();
+				nextBlock = myDBCache.getBlock(nextPBlockNumber);
 			}
-			bytesWritten+=nextBlock.write(buffer, startOffset+bytesWritten, count-bytesWritten);
+			bytesWritten += nextBlock.write(buffer, startOffset + bytesWritten,
+					count - bytesWritten);
 			nextBlock.release();
 		}
 		return count;
