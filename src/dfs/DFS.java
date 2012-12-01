@@ -17,7 +17,7 @@ import common.DFileID;
 import dblockcache.DBuffer;
 import dblockcache.DBufferCache;
 
-public abstract class DFS {
+public class DFS {
 
 	private String myVolName;
 	private ArrayList<Integer> myFreeINodes;
@@ -25,7 +25,7 @@ public abstract class DFS {
 	private ArrayList<Integer> myDFileList;// partition at 512
 	private DBufferCache myDBCache;
 
-	DFS(String volName, boolean format) {
+	public DFS(String volName, boolean format) {
 		myVolName = volName;
 		try {
 			myDBCache = new DBufferCache(Constants.CACHE_SIZE, new VirtualDisk(
@@ -39,11 +39,11 @@ public abstract class DFS {
 		initializeMData();
 	}
 
-	DFS(boolean format) {
+	public DFS(boolean format) {
 		this(Constants.vdiskName, format);
 	}
 
-	DFS() {
+	public DFS() {
 		this(Constants.vdiskName, false);
 	}
 
