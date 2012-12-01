@@ -6,9 +6,9 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import virtualdisk.VirtualDisk;
 
@@ -21,16 +21,15 @@ import dblockcache.DBufferCache;
 public class DFS {
 
 	private String myVolName;
-	private ArrayList<Integer> myFreeINodes;
-	private ArrayList<Integer> myFreeBlocks;
-	private TreeMap<Integer,Pair> myDFileList;// partition at 512
+	private TreeSet<Integer> myFreeINodes, myFreeBlocks;
+	private TreeMap<DFileID, LockState> myDFiles;
 	private DBufferCache myDBCache;
 
 	public DFS(String volName, boolean format) {
 		myVolName = volName;
 		try {
-			myDBCache = new DBufferCache(Constants.CACHE_SIZE, new VirtualDisk(
-					myVolName, format));
+			myDBCache = new DBufferCache(Constants.CACHE_SIZE,
+                                         new VirtualDisk(myVolName, format));
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -58,16 +57,24 @@ public class DFS {
 						// implementation that formatstores at bootup.
 	}
 
+    public List<DFileID> listAllDFiles()
+    {
+        List<DFileID> dFiles = new ArrayList<DFileID>();
+        dFiles.addAll(myDFiles.keySet());
+        return dFiles;
+    }
+
 	// scan VDF to form the metadata stuctures
 	private void initializeMData() {
 		formatFreeBlockList(); // set free block list to all free blocks
 
-		for (int i = 0; i < Constants.NUM_OF_INODES; i++) {
+		for (int i = 1; i <= Constants.NUM_OF_INODES; i++) {
 			ArrayList<Integer> iNodeInfo = parseINode(new DFileID(i));
 			if (iNodeInfo.get(0) == 0) {
 				myFreeINodes.add(i);
-			} else {
-				myDFileList.put(i, new Pair(true,0));
+			}
+            else {
+				myDFiles.put(new DFileID(i), new LockState(true, 0));
 				for (int blockID = 1; blockID < iNodeInfo.size(); blockID++) {
 					if (iNodeInfo.get(blockID) != 0)
 						myFreeBlocks.remove(blockID);
@@ -102,16 +109,16 @@ public class DFS {
 	 * identify the DFile
 	 */
 	public synchronized int createDFile() {
-		sortMetadata();
-		DFileID newFile = new DFileID(myFreeINodes.get(0));
-		myFreeINodes.remove(0);
-		myDFileList.put(newFile.id(), new Pair(true,1));
+        int dFID = myFreeINodes.first();
+        myFreeINodes.remove(dFID);
+		DFileID newFile = new DFileID(dFID);
+		myDFiles.put(newFile, new LockState(true,1));
 		byte[] buffer = new byte[Constants.BLOCK_SIZE];
 		DBuffer container = myDBCache.getBlock(newFile.block());
 		container.read(buffer, 0, Constants.BLOCK_SIZE);
 		container.release();
 		ByteBuffer b = ByteBuffer.allocate(Constants.INODE_SIZE);
-		int nextBlock = myFreeBlocks.get(0);
+		int nextBlock = myFreeBlocks.first();
 		myFreeBlocks.remove(0);
 		b.putInt(1);
 		b.putInt(nextBlock);
@@ -125,7 +132,7 @@ public class DFS {
 		container = myDBCache.getBlock(newFile.block());
 		container.write(buffer, 0, Constants.BLOCK_SIZE);
 		container.release();
-		myDFileList.get(newFile).numReaders--;
+		myDFiles.get(newFile).numReaders--;
 		return newFile.id();
 	}
 
@@ -134,28 +141,12 @@ public class DFS {
 		ArrayList<Integer> iNodeInfo = parseINode(new DFileID(dFID));
 
 		formatBlock(dFID);
-		myFreeINodes.remove(myFreeINodes.indexOf(dFID));
-		synchronized(this){
-		while(!myDFileList.get(dFID).isShared){
-			try {
-				wait();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		myDFileList.get(dFID).isShared=false;
-		while(myDFileList.get(dFID).numReaders==0){
-			try {
-				wait();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		myDFileList.remove(dFID);
-		myDFileList.get(dFID).isShared=true;
-		}
+		myFreeINodes.remove(dFID);
+        acquireWriteLock(dFID);
+		myDFiles.remove(dFID);
+        releaseWriteLock(dFID);
 		for (int i = 1; i < iNodeInfo.size(); i++) {
-			myFreeBlocks.remove(myFreeBlocks.indexOf(iNodeInfo.get(i)));
+			myFreeBlocks.remove(iNodeInfo.get(i));
 			formatBlock(iNodeInfo.get(i));
 		}
 	}
@@ -195,7 +186,6 @@ public class DFS {
 	 * buffer offset startOffsetl at most count bytes are transferred
 	 */
 	public int write(int dFID, byte[] buffer, int startOffset, int count) {
-		sortMetadata();
 		if (myFreeBlocks.size() == 0) {
 			System.out.println("VOLUME SIZE EXCEEDED");
 			return -1;
@@ -217,7 +207,7 @@ public class DFS {
 				ByteBuffer b = ByteBuffer.allocate(Constants.INODE_SIZE);
 				int nextPBlockNumber;
 				synchronized (this) {
-					nextPBlockNumber = myFreeBlocks.get(0);
+					nextPBlockNumber = myFreeBlocks.first();
 					myFreeBlocks.remove(0);
 				}
 				iNodeInfo.set(0, iNodeInfo.get(0) + 1);
@@ -254,22 +244,69 @@ public class DFS {
 	/*
 	 * List all the existing DFileIDs in the volume
 	 */
-
 	public void sync() {
 		myDBCache.sync();
 	}
 
-	private void sortMetadata() {
-		Collections.sort(myFreeINodes);
-		Collections.sort(myFreeBlocks);
-	}
+    private synchronized boolean acquireReadLock(int dFID)
+    {
+        LockState state = myDFiles.get(dFID);
+        if (state == null) return false;
+        while (!state.isShared) {
+            try {
+                wait();
+            }
+            catch (InterruptedException e) {}
+        }
+        state.numReaders++;
+        return true;
+    }
 
-	private class Pair{
-		boolean isShared;
-		int numReaders;
-		private Pair(boolean shared, int readers){
-		isShared=shared;
-		numReaders=readers;
+    private synchronized boolean releaseReadLock(int dFID)
+    {
+        LockState state = myDFiles.get(dFID);
+        if (state == null) return false;
+        state.numReaders--;
+        return true;
+    }
+
+    private synchronized boolean acquireWriteLock(int dFID)
+    {
+        LockState state = myDFiles.get(dFID);
+        if (state == null) return false;
+
+		while (!state.isShared) {  // another thread has the write lock
+			try {
+				wait();
+			}
+            catch (InterruptedException e) {}
+		}
+		state.isShared=false;
+		while (state.numReaders > 0) {
+			try {
+				wait();
+			}
+            catch (InterruptedException e) {}
+		}
+        return true;
+    }
+
+    private synchronized boolean releaseWriteLock(int dFID)
+    {
+        LockState state = myDFiles.get(dFID);
+        if (state == null) return false;
+
+        state.isShared = true;
+        return true;
+    }
+
+	private class LockState {
+		public boolean isShared;
+		public int numReaders;
+
+		public LockState(boolean shared, int readers) {
+            isShared=shared;
+            numReaders=readers;
 		}
 	}
 }
