@@ -49,7 +49,6 @@ public class DFS {
 	}
 
     public void init() {
-		initializeMData();
         Thread worker = new Thread() {
                 public void run() {
                     try {
@@ -61,6 +60,7 @@ public class DFS {
                 }
             };
         worker.start();
+		initializeMData();
     }
 
 	/*
@@ -211,9 +211,14 @@ public class DFS {
 		DBuffer blockToParse = myDBCache.getBlock(dFID.block());
 		blockToParse.read(buffer, 0, Constants.BLOCK_SIZE);
 		myDBCache.releaseBlock(blockToParse);
-		for (int loc = dFID.offset(); loc < Constants.INODE_SIZE; loc += 4)
-			parsedINode.add(ByteBuffer.wrap(
-					Arrays.copyOfRange(buffer, loc, loc + 4)).getInt());
+
+        // BTW, an int is 4 bytes
+		for (int loc = 0; loc < Constants.INODE_SIZE; loc += 4) {
+            byte[] bytes = Arrays.copyOfRange(buffer,
+                                              dFID.offset() + loc,
+                                              dFID.offset() + loc + 4);
+			parsedINode.add(ByteBuffer.wrap(bytes).getInt());
+        }
 
 		return parsedINode;
 	}

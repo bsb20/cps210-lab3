@@ -48,7 +48,6 @@ public class DBuffer
         myIoOperations++;
         try {
 			myVirtualDisk.startRequest(this, DiskOperationType.WRITE);
-            myClean = true;
 		} catch (IllegalArgumentException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -135,6 +134,8 @@ public class DBuffer
 	public synchronized void ioComplete()
     {
         myIoOperations--;
+        myClean = true;
+        myValid = true;
         notifyAll();
     }
 
