@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.TreeMap;
 
 import virtualdisk.VirtualDisk;
 
@@ -22,7 +23,7 @@ public abstract class DFS {
 	private String myVolName;
 	private ArrayList<Integer> myFreeINodes;
 	private ArrayList<Integer> myFreeBlocks;
-	private ArrayList<Integer> myDFileList;// partition at 512
+	private TreeMap<Integer,Pair> myDFileList;// partition at 512
 	private DBufferCache myDBCache;
 
 	DFS(String volName, boolean format) {
@@ -62,11 +63,11 @@ public abstract class DFS {
 		formatFreeBlockList(); // set free block list to all free blocks
 
 		for (int i = 0; i < Constants.NUM_OF_INODES; i++) {
-			ArrayList<Integer> iNodeInfo = parseINode(i);
+			ArrayList<Integer> iNodeInfo = parseINode(new DFileID(i));
 			if (iNodeInfo.get(0) == 0) {
 				myFreeINodes.add(i);
 			} else {
-				myDFileList.add(i);
+				myDFileList.put(i, new Pair(true,0));
 				for (int blockID = 1; blockID < iNodeInfo.size(); blockID++) {
 					if (iNodeInfo.get(blockID) != 0)
 						myFreeBlocks.remove(blockID);
@@ -82,14 +83,14 @@ public abstract class DFS {
 		}
 	}
 
-	private ArrayList<Integer> parseINode(int dFID) {
+	private ArrayList<Integer> parseINode(DFileID dFID) {
 		byte[] buffer = new byte[Constants.BLOCK_SIZE];
 		ArrayList<Integer> parsedINode = new ArrayList<Integer>();
-		DBuffer blockToParse = myDBCache.getBlock((dFID * Constants.INODE_SIZE)
+		DBuffer blockToParse = myDBCache.getBlock((dFID.block())
 				/ Constants.BLOCK_SIZE);
 		blockToParse.read(buffer, 0, Constants.BLOCK_SIZE);
 		blockToParse.release();
-		for (int loc = (dFID * Constants.INODE_SIZE) % Constants.BLOCK_SIZE; loc < Constants.BLOCK_SIZE; loc += 4)
+		for (int loc = dFID.offset(); loc < Constants.INODE_SIZE; loc += 4)
 			parsedINode.add(ByteBuffer.wrap(
 					Arrays.copyOfRange(buffer, loc, loc + 4)).getInt());
 
@@ -104,6 +105,7 @@ public abstract class DFS {
 		sortMetadata();
 		DFileID newFile = new DFileID(myFreeINodes.get(0));
 		myFreeINodes.remove(0);
+		myDFileList.put(newFile.id(), new Pair(true,1));
 		byte[] buffer = new byte[Constants.BLOCK_SIZE];
 		DBuffer container = myDBCache.getBlock(newFile.block());
 		container.read(buffer, 0, Constants.BLOCK_SIZE);
@@ -120,20 +122,38 @@ public abstract class DFS {
 		for (int j = 0; j < Constants.INODE_SIZE; j++) {
 			buffer[j + newFile.offset()] = newINode[j];
 		}
-		container=myDBCache.getBlock(newFile.block());
+		container = myDBCache.getBlock(newFile.block());
 		container.write(buffer, 0, Constants.BLOCK_SIZE);
 		container.release();
+		myDFileList.get(newFile).numReaders--;
 		return newFile.id();
 	}
 
 	/* destroys the file specified by the DFileID */
 	public void destroyDFile(int dFID) {
-		ArrayList<Integer> iNodeInfo = parseINode(dFID);
+		ArrayList<Integer> iNodeInfo = parseINode(new DFileID(dFID));
 
 		formatBlock(dFID);
 		myFreeINodes.remove(myFreeINodes.indexOf(dFID));
-		myDFileList.remove(myDFileList.indexOf(dFID));
-
+		synchronized(this){
+		while(!myDFileList.get(dFID).isShared){
+			try {
+				wait();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		myDFileList.get(dFID).isShared=false;
+		while(myDFileList.get(dFID).numReaders==0){
+			try {
+				wait();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		myDFileList.remove(dFID);
+		myDFileList.get(dFID).isShared=true;
+		}
 		for (int i = 1; i < iNodeInfo.size(); i++) {
 			myFreeBlocks.remove(myFreeBlocks.indexOf(iNodeInfo.get(i)));
 			formatBlock(iNodeInfo.get(i));
@@ -156,11 +176,11 @@ public abstract class DFS {
 	 * buffer offset startOffset; at most count bytes are transferred
 	 */
 	public int read(int dFID, byte[] buffer, int startOffset, int count) {
-		ArrayList<Integer> iNodeInfo = parseINode(dFID);
+		ArrayList<Integer> iNodeInfo = parseINode(new DFileID(dFID));
 		int bytesRead = 0;
 
-		for (int i = 1; i < iNodeInfo.size(); i++) {
-			DBuffer toRead = myDBCache.getBlock(iNodeInfo.get(1));
+		for (int i = 1; i <= iNodeInfo.get(0); i++) {
+			DBuffer toRead = myDBCache.getBlock(iNodeInfo.get(i));
 			bytesRead += toRead.read(buffer, startOffset + bytesRead, count
 					- bytesRead);
 			toRead.release();
@@ -180,34 +200,43 @@ public abstract class DFS {
 			System.out.println("VOLUME SIZE EXCEEDED");
 			return -1;
 		}
-		ArrayList<Integer> iNodeInfo = parseINode(dFID);
+		DFileID file = new DFileID(dFID);
+		ArrayList<Integer> iNodeInfo = parseINode(file);
 		int bytesWritten = 0;
 		int vBlockNumber = 1;
 		while (bytesWritten < count
 				&& buffer.length > (startOffset + bytesWritten)) {
 			DBuffer nextBlock;
-			if (vBlockNumber < iNodeInfo.size() - 1) {
+			if (vBlockNumber < iNodeInfo.get(0)) {
 				nextBlock = myDBCache.getBlock(iNodeInfo.get(vBlockNumber));
 				vBlockNumber++;
 			} else {
-				DBuffer iNode = myDBCache.getBlock(dFID);
-				ByteBuffer b = ByteBuffer.allocate(Constants.BLOCK_SIZE);
+				DBuffer iNodeBlock = myDBCache.getBlock(file.block());
+				byte[] blockBuffer = new byte[Constants.BLOCK_SIZE];
+				iNodeBlock.read(buffer, 0, Constants.BLOCK_SIZE);
+				ByteBuffer b = ByteBuffer.allocate(Constants.INODE_SIZE);
 				int nextPBlockNumber;
 				synchronized (this) {
 					nextPBlockNumber = myFreeBlocks.get(0);
 					myFreeBlocks.remove(0);
 				}
-				for (int i : iNodeInfo)
-					b.putInt(i);
+				iNodeInfo.set(0, iNodeInfo.get(0) + 1);
+				iNodeInfo.add(nextPBlockNumber);
 				try {
-					b.putInt(nextPBlockNumber);
+					for (int i : iNodeInfo)
+						b.putInt(i);
+
 				} catch (BufferOverflowException e) {
 					System.out.println("MAX FILE SIZE EXCEEDED");
 					return -1;
 				}
-				iNode.write(b.array(), 0, Constants.BLOCK_SIZE);
-				iNode.release();
+				for (int j = 0; j < Constants.INODE_SIZE; j++) {
+					blockBuffer[j + file.offset()] = b.array()[j];
+				}
+				iNodeBlock.write(blockBuffer, 0, Constants.BLOCK_SIZE);
+				iNodeBlock.release();
 				nextBlock = myDBCache.getBlock(nextPBlockNumber);
+				vBlockNumber++;
 			}
 			bytesWritten += nextBlock.write(buffer, startOffset + bytesWritten,
 					count - bytesWritten);
@@ -218,26 +247,29 @@ public abstract class DFS {
 
 	/* returns the size in bytes of the file indicated by DFileID. */
 	public int sizeDFile(int dFID) {
-		ArrayList<Integer> iNodeInfo = parseINode(dFID);
-		return iNodeInfo.get(0);
+		ArrayList<Integer> iNodeInfo = parseINode(new DFileID(dFID));
+		return iNodeInfo.get(0)*Constants.BLOCK_SIZE;
 	}
 
 	/*
 	 * List all the existing DFileIDs in the volume
 	 */
-	public List<Integer> listAllDFiles() {
-		sortMetadata();
-		return myDFileList;
-	}
 
 	public void sync() {
 		myDBCache.sync();
 	}
 
 	private void sortMetadata() {
-		Collections.sort(myDFileList);
 		Collections.sort(myFreeINodes);
 		Collections.sort(myFreeBlocks);
 	}
 
+	private class Pair{
+		boolean isShared;
+		int numReaders;
+		private Pair(boolean shared, int readers){
+		isShared=shared;
+		numReaders=readers;
+		}
+	}
 }
