@@ -28,6 +28,8 @@ public class DFS {
 
 	public DFS(String volName, boolean format) {
 		myVolName = volName;
+		myFreeINodes=new TreeSet<Integer>();
+		myFreeBlocks=new TreeSet<Integer>();
 		try {
             System.out.println("Making a disk");
             myVirtualDisk = new VirtualDisk(myVolName, format);
@@ -209,6 +211,7 @@ public class DFS {
 	private ArrayList<Integer> parseINode(DFileID dFID) {
 		byte[] buffer = new byte[Constants.BLOCK_SIZE];
 		ArrayList<Integer> parsedINode = new ArrayList<Integer>();
+		//AcquireReadLock
 		DBuffer blockToParse = myDBCache.getBlock(dFID.block());
 		blockToParse.read(buffer, 0, Constants.BLOCK_SIZE);
 		myDBCache.releaseBlock(blockToParse);
