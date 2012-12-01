@@ -106,6 +106,8 @@ public class DBuffer
 	 */
 	public synchronized int read(byte[] buffer, int startOffset, int count)
     {
+		if (myBlockId == 514)
+		System.out.println("READING: " + myBlockId);
         if (!checkValid())
             return -1;
         int size = count > Constants.BLOCK_SIZE ? Constants.BLOCK_SIZE : count;
@@ -128,8 +130,6 @@ public class DBuffer
         for (int i = 0; i < size; i++) {
             myBuffer[i] = buffer[startOffset + i];
         }
-        System.out.println(myBlockId + " INPUT: " + Arrays.toString(buffer));
-        System.out.println(myBlockId + " CONTENTS: " + Arrays.toString(myBuffer));
         return size;
     }
 

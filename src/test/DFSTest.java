@@ -48,6 +48,8 @@ public class DFSTest {
 
 		byte[] output = new byte[64];
 		dfs.read(dfid, output, 0, 64);
+		System.out.println(Arrays.toString(input));
+		System.out.println(Arrays.toString(output));
 		assertEquals(input, output);
 	}
 

@@ -248,6 +248,7 @@ public class DFS {
         int numBlocks = count / Constants.BLOCK_SIZE +
             (count % Constants.BLOCK_SIZE == 0 ? 0 : 1);
         numBlocks = Math.max(1, numBlocks);
+        iNodeInfo.add(0, numBlocks);
 
         if (numBlocks < currentBlocks) {
             for (int i = currentBlocks - numBlocks; i < currentBlocks; i++) {
@@ -255,14 +256,13 @@ public class DFS {
             }
         }
         if (numBlocks > currentBlocks) {
-            for (int i = numBlocks - currentBlocks; i < numBlocks; i++) {
+            for (int i = currentBlocks; i < numBlocks; i++) {
                 Integer newBlock = myFreeBlocks.first();
                 myFreeBlocks.remove(newBlock);
-                iNodeInfo.add(newBlock);
+                iNodeInfo.add(i + 1, newBlock);
             }
         }
         if (numBlocks != currentBlocks) {
-        	System.out.println("WRITING INODE: " + dFID.id());
             writeINode(dFID, iNodeInfo);
         }
         return iNodeInfo;
