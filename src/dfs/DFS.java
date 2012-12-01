@@ -75,7 +75,7 @@ public class DFS {
 		myDFiles.put(newFile, new LockState(true, 0));
 
         acquireWriteLock(newFile);
-        allocateBlocks(dFID, 0);
+        allocateBlocks(new DFileID(dFID), 0);
         releaseWriteLock(newFile);
 		return newFile;
 	}
@@ -94,8 +94,8 @@ public class DFS {
 	 */
 	public int read(DFileID dFID, byte[] buffer, int startOffset, int count) {
 		ArrayList<Integer> iNodeInfo = parseINode(dFID);
+        acquireReadLock(dFID);
 		int bytesRead = 0;
-
 		for (int i = 1; i <= iNodeInfo.get(0); i++) {
 			DBuffer toRead = myDBCache.getBlock(iNodeInfo.get(i));
 			bytesRead += toRead.read(buffer, startOffset + bytesRead, count
@@ -104,6 +104,7 @@ public class DFS {
 			if (bytesRead >= count)
 				break;
 		}
+        releaseReadLock(dFID);
 		return bytesRead;
 	}
 
@@ -190,7 +191,7 @@ public class DFS {
 	private ArrayList<Integer> parseINode(DFileID dFID) {
 		byte[] buffer = new byte[Constants.BLOCK_SIZE];
 		ArrayList<Integer> parsedINode = new ArrayList<Integer>();
-		DBuffer blockToParse = myDBCache.getBlock(dFID.block())
+		DBuffer blockToParse = myDBCache.getBlock(dFID.block());
 		blockToParse.read(buffer, 0, Constants.BLOCK_SIZE);
 		myDBCache.releaseBlock(blockToParse);
 		for (int loc = dFID.offset(); loc < Constants.INODE_SIZE; loc += 4)
@@ -213,8 +214,8 @@ public class DFS {
         DBuffer inode = myDBCache.getBlock(dFID.block());
 		inode.read(buffer, 0, Constants.BLOCK_SIZE);
         overwrite(buffer, newINode, dFID.offset());
-		container.write(buffer, 0, Constants.BLOCK_SIZE);
-		myDBCache.releaseBlock(container);
+		inode.write(buffer, 0, Constants.BLOCK_SIZE);
+		myDBCache.releaseBlock(inode);
 	}
 
 
