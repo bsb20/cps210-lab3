@@ -68,7 +68,7 @@ public class DFS {
 	 * creates a new DFile and returns the DFileID, which is useful to uniquely
 	 * identify the DFile
 	 */
-	public synchronized int createDFile() {
+	public synchronized DFileID createDFile() {
         int dFID = myFreeINodes.first();
         myFreeINodes.remove(dFID);
 		DFileID newFile = new DFileID(dFID);
@@ -76,27 +76,22 @@ public class DFS {
 
         acquireWriteLock(newFile);
 		byte[] buffer = new byte[Constants.BLOCK_SIZE];
-		DBuffer container = myDBCache.getBlock(newFile.block());
-		container.read(buffer, 0, Constants.BLOCK_SIZE);
-		myDBCache.releaseBlock(container);
-
-		ByteBuffer b = ByteBuffer.allocate(Constants.INODE_SIZE);
 		int nextBlock = myFreeBlocks.first();
 		myFreeBlocks.remove(nextBlock);
-		b.putInt(1);
-		b.putInt(nextBlock);
-		for (int i = 0; i < Constants.INODE_SIZE - 8; i += 4) {
-			b.putInt(0);
-		}
+
+		ByteBuffer b = ByteBuffer.allocate(Constants.INODE_SIZE);
+		b.putInt(1);  // number of blocks in file
+		b.putInt(nextBlock);  // first block address
 		byte[] newINode = b.array();
-		for (int j = 0; j < Constants.INODE_SIZE; j++) {
-			buffer[j + newFile.offset()] = newINode[j];
-		}
-		container = myDBCache.getBlock(newFile.block());
+
+		DBuffer container = myDBCache.getBlock(newFile.block());
+		container.read(buffer, 0, Constants.BLOCK_SIZE);
+        overwrite(buffer, newINode, newFile.offset());
 		container.write(buffer, 0, Constants.BLOCK_SIZE);
 		myDBCache.releaseBlock(container);
-		myDFiles.get(newFile).numReaders--;
-		return newFile.id();
+
+        releaseWriteLock(newFile);
+		return newFile;
 	}
 
 	/* destroys the file specified by the DFileID */
@@ -210,6 +205,11 @@ public class DFS {
 		myDBCache.releaseBlock(iNodeToKill);
 	}
 
+    private void overwrite(byte[] original, byte[] data, int offset) {
+        for (int i = 0; i < data.length; i++) {
+            original[offset + i] = data[i];
+        }
+    }
 
 	// scan VDF to form the metadata stuctures
 	private void initializeMData() {
