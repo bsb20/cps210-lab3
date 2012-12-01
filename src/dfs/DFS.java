@@ -29,7 +29,9 @@ public class DFS {
 	public DFS(String volName, boolean format) {
 		myVolName = volName;
 		try {
+            System.out.println("Making a disk");
             myVirtualDisk = new VirtualDisk(myVolName, format);
+            System.out.println("Made a disk");
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {

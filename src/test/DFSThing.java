@@ -11,6 +11,7 @@ public class DFSThing
     {
 		System.out.println("Making DFS");
         DFS dfs = new DFS(true);
+		System.out.println("DFS made");
         dfs.init();
 		System.out.println("Making file");
 		DFileID dfid = dfs.createDFile();
