@@ -1,7 +1,7 @@
 package common;
 
 /* typedef DFileID to int */
-public class DFileID
+public class DFileID implements Comparable<DFileID>
 {
 	private int _dFID;
 
@@ -47,4 +47,9 @@ public class DFileID
     public int id(){
     	return _dFID;
     }
+
+	@Override
+	public int compareTo(DFileID rhs) {
+		return this.id() - rhs.id();
+	}
 }

@@ -13,6 +13,7 @@ public class DFSThing
         DFS dfs = new DFS(true);
 		System.out.println("DFS made");
         dfs.init();
+		System.out.println(dfs.listAllDFiles().size());
 		System.out.println("Making file");
 		DFileID dfid = dfs.createDFile();
 		System.out.println(dfs.listAllDFiles().size());

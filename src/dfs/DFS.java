@@ -29,6 +29,7 @@ public class DFS {
 		myVolName = volName;
 		myFreeINodes=new TreeSet<Integer>();
 		myFreeBlocks=new TreeSet<Integer>();
+		myDFiles = new TreeMap<DFileID, LockState>();
 		try {
             myVirtualDisk = new VirtualDisk(myVolName, format);
 		} catch (FileNotFoundException e) {
@@ -261,6 +262,7 @@ public class DFS {
             }
         }
         if (numBlocks != currentBlocks) {
+        	System.out.println("WRITING INODE: " + dFID.id());
             writeINode(dFID, iNodeInfo);
         }
         return iNodeInfo;

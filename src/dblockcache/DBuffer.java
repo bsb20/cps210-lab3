@@ -1,6 +1,7 @@
 package dblockcache;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import common.Constants;
 import common.Constants.DiskOperationType;
@@ -127,6 +128,8 @@ public class DBuffer
         for (int i = 0; i < size; i++) {
             myBuffer[i] = buffer[startOffset + i];
         }
+        System.out.println(myBlockId + " INPUT: " + Arrays.toString(buffer));
+        System.out.println(myBlockId + " CONTENTS: " + Arrays.toString(myBuffer));
         return size;
     }
 
