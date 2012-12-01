@@ -2,7 +2,6 @@ package dfs;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,9 +28,7 @@ public class DFS {
 	public DFS(String volName, boolean format) {
 		myVolName = volName;
 		try {
-            System.out.println("Making a disk");
             myVirtualDisk = new VirtualDisk(myVolName, format);
-            System.out.println("Made a disk");
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -39,7 +36,6 @@ public class DFS {
 		}// this must be wrong since need VDF to be maintained session to
 			// session?
         myDBCache = new DBufferCache(Constants.CACHE_SIZE, myVirtualDisk);
-        System.out.println("Made a $$");
 	}
 
 	public DFS(boolean format) {
