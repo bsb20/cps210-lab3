@@ -83,5 +83,14 @@ public class DBufferCache
 	 * sync() writes back all dirty blocks to the volume and wait for completion.
 	 * The sync() method should maintain clean block copies in DBufferCache.
 	 */
-	public void sync(){};
+	public void sync() {
+        for (DBuffer block : myBlocks) {
+            block.acquire();
+            if (block.checkValid() && block.checkClean()) {
+                block.startPush();
+                waitClean();
+            }
+            block.release();
+        }
+    }
 }
