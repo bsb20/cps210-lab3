@@ -150,7 +150,7 @@ public class DBuffer
         return myBuffer;
     }
 
-    public synchronized void acquire()
+    synchronized void acquire()
     {
         while (myHeld) {
             try {
@@ -166,7 +166,7 @@ public class DBuffer
         return myHeld;
     }
 
-    public synchronized void release()
+    synchronized void release()
     {
         myHeld = false;
         notify();

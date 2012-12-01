@@ -7,6 +7,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import common.Constants;
+import common.DFileID;
 
 import dfs.DFS;
 
@@ -31,7 +32,7 @@ public class DFSTest {
 	public void testCreateFile() {
 		int dfid = dfs.createDFile();
 		assertEquals(1, dfs.listAllDFiles().size());
-		assertEquals(0, dfs.sizeDFile(dfid));
+		assertEquals(0, dfs.sizeDFile(new DFileID(dfid)));
 	}
 	
 	@Test
