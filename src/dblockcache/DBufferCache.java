@@ -19,6 +19,7 @@ public class DBufferCache
 	public DBufferCache(int cacheSize, VirtualDisk virtualDisk) {
         myCacheSize = cacheSize;
         myBlocks = new LinkedList<DBuffer>();
+        myVirtualDisk=virtualDisk;
 	}
 
 	/*

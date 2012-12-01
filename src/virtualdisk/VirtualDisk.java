@@ -79,13 +79,18 @@ public class VirtualDisk implements IVirtualDisk {
 	 * Clear the contents of the disk by writing 0s to it
 	 */
 	private void formatStore() {
-		byte b[] = new byte[Constants.BLOCK_SIZE * Constants.NUM_OF_BLOCKS];
-		setBuffer((byte) 0, b, Constants.BLOCK_SIZE * Constants.NUM_OF_BLOCKS);
-        try {
-            _file.write(b, 0, Constants.BLOCK_SIZE * Constants.NUM_OF_BLOCKS);
-        }
-        catch (Exception e) {
-            System.out.println("Error in format: WRITE operation failed at the device.");
+		byte b[] = new byte[Constants.BLOCK_SIZE];
+		setBuffer((byte) 0, b, Constants.BLOCK_SIZE);
+		for (int i = 0; i < Constants.NUM_OF_BLOCKS; i++) {
+			try {
+				int seekLen = i * Constants.BLOCK_SIZE;
+				_file.seek(seekLen);
+				_file.write(b, 0, Constants.BLOCK_SIZE);
+			} catch (Exception e) {
+				System.out
+						.println("Error in format: WRITE operation failed at the device block "
+								+ i);
+			}
 		}
 	}
 
@@ -133,14 +138,14 @@ public class VirtualDisk implements IVirtualDisk {
 						e.printStackTrace();
 					}
 				}
-				next=myRequestQueue.poll();
-				}
-				if(next.operation==DiskOperationType.WRITE)
-					writeBlock(next.buffer);
-				
-				else
-					readBlock(next.buffer);	
-			next.buffer.ioComplete();	
+				next = myRequestQueue.poll();
+			}
+			if (next.operation == DiskOperationType.WRITE)
+				writeBlock(next.buffer);
+
+			else
+				readBlock(next.buffer);
+			next.buffer.ioComplete();
 		}
 	}
 
