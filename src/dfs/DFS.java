@@ -100,7 +100,12 @@ public class DFS {
 	/* destroys the file specified by the DFileID */
 	public void destroyDFile(DFileID dFID) {
         acquireWriteLock(dFID);
+		List<Integer> iNodeInfo = parseINode(dFID);
+		for (int i = 1; i <= numBlocks(iNodeInfo.get(0)); i++) {
+			myFreeBlocks.add(i);
+		}
 		formatINode(dFID);
+		myFreeINodes.add(dFID.id());
 		myDFiles.remove(dFID);
 		
         releaseWriteLock(dFID);
@@ -111,8 +116,8 @@ public class DFS {
 	 * buffer offset startOffset; at most count bytes are transferred
 	 */
 	public int read(DFileID dFID, byte[] buffer, int startOffset, int count) {
-		ArrayList<Integer> iNodeInfo = parseINode(dFID);
         acquireReadLock(dFID);
+		ArrayList<Integer> iNodeInfo = parseINode(dFID);
 		int bytesRead = 0;
 		for (int i = 1; i <= numBlocks(iNodeInfo.get(0)); i++) {
 			DBuffer toRead = myDBCache.getBlock(iNodeInfo.get(i));
@@ -153,9 +158,9 @@ public class DFS {
 
 	/* returns the size in bytes of the file indicated by DFileID. */
 	public int sizeDFile(DFileID dFID) {
+		acquireReadLock(dFID);
 		ArrayList<Integer> iNodeInfo = parseINode(dFID);
-		System.out.println(dFID.id());
-		System.out.println(iNodeInfo.get(0));
+		releaseReadLock(dFID);
 		return iNodeInfo.get(0);
 	}
 
@@ -171,7 +176,10 @@ public class DFS {
 		DBuffer iNodeToKill = myDBCache.getBlock(dFID.block());
 		byte[] blockData= new byte[Constants.BLOCK_SIZE];
 		iNodeToKill.read(blockData, 0, Constants.BLOCK_SIZE);
-		for(int i=0; i<Constants.INODE_SIZE; i++){
+		for(int i = 0; i < 4; i++) {
+			blockData[i+dFID.offset()]=(byte) 0xFF;
+		}
+		for(int i=4; i<Constants.INODE_SIZE; i++){
 			blockData[i+dFID.offset()]=0;
 		}
 		iNodeToKill.write(blockData, 0, Constants.BLOCK_SIZE);
@@ -213,7 +221,6 @@ public class DFS {
 	private ArrayList<Integer> parseINode(DFileID dFID) {
 		byte[] buffer = new byte[Constants.BLOCK_SIZE];
 		ArrayList<Integer> parsedINode = new ArrayList<Integer>();
-		//AcquireReadLock
 		DBuffer blockToParse = myDBCache.getBlock(dFID.block());
 		blockToParse.read(buffer, 0, Constants.BLOCK_SIZE);
 		myDBCache.releaseBlock(blockToParse);

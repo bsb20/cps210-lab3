@@ -74,6 +74,13 @@ public class DFSTest {
 		assertArrayEquals(input, output);
 	}
 
+    @Test
+    public void testWriteTwoFiles() {
+		DFileID file1 = dfs.createDFile();
+		DFileID file2 = dfs.createDFile();
+        assert(file1.id() > file2.id());
+    }
+
 	@Test
 	public void testDestroyFile() {
 		DFileID dfid = dfs.createDFile();
@@ -81,4 +88,12 @@ public class DFSTest {
 		dfs.destroyDFile(dfid);
 		assertEquals(0, dfs.listAllDFiles().size());
 	}
+
+    @Test
+    public void testDestroyFileReleasesInode() {
+		DFileID file1 = dfs.createDFile();
+		dfs.destroyDFile(file1);
+        DFileID file2 = dfs.createDFile();
+        assertEquals(file1.id(), file2.id());
+    }
 }
