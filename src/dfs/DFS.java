@@ -102,6 +102,7 @@ public class DFS {
         acquireWriteLock(dFID);
 		formatINode(dFID);
 		myDFiles.remove(dFID);
+		
         releaseWriteLock(dFID);
 	}
 
@@ -194,7 +195,7 @@ public class DFS {
 			}
             else {
 				myDFiles.put(new DFileID(i), new LockState(true, 0));
-				for (int blockID = 1; blockID < iNodeInfo.size(); blockID++) {
+				for (int blockID = 1; blockID <= numBlocks(iNodeInfo.get(0)); blockID++) {
 					if (iNodeInfo.get(blockID) != 0)
 						myFreeBlocks.remove(blockID);
 				}
