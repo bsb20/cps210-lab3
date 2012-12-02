@@ -18,12 +18,8 @@ public class DFSTest {
 
 	@Before
 	public void setUp() throws Exception {
-		dfs = new DFS();
+		dfs = new DFS(true);
 		dfs.init();
-	}
-
-	@After
-	public void tearDown() throws Exception {
 	}
 
 	@Test

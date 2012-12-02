@@ -302,6 +302,7 @@ public class DFS {
         LockState state = myDFiles.get(dFID);
         if (state == null) return false;
         state.numReaders--;
+        notifyAll();
         return true;
     }
 
@@ -332,6 +333,7 @@ public class DFS {
         if (state == null) return false;
 
         state.isShared = true;
+        notifyAll();
         return true;
     }
 
