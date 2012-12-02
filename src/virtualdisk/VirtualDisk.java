@@ -81,6 +81,12 @@ public class VirtualDisk implements IVirtualDisk {
 	private void formatStore() {
 		byte b[] = new byte[Constants.BLOCK_SIZE * Constants.NUM_OF_BLOCKS];
 		setBuffer((byte) 0, b, Constants.BLOCK_SIZE * Constants.NUM_OF_BLOCKS);
+        for (int i = 0; i < Constants.NUM_OF_INODES; i++) {
+            b[Constants.BLOCK_SIZE + i * Constants.INODE_SIZE + 0] = (byte) 0xFF;
+            b[Constants.BLOCK_SIZE + i * Constants.INODE_SIZE + 1] = (byte) 0xFF;
+            b[Constants.BLOCK_SIZE + i * Constants.INODE_SIZE + 2] = (byte) 0xFF;
+            b[Constants.BLOCK_SIZE + i * Constants.INODE_SIZE + 3] = (byte) 0xFF;
+        }
         try {
             _file.write(b, 0, Constants.BLOCK_SIZE * Constants.NUM_OF_BLOCKS);
         }

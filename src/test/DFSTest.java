@@ -51,6 +51,16 @@ public class DFSTest {
 		assertArrayEquals(input, output);
 	}
 
+    @Test
+    public void testFileSize() {
+		DFileID dfid = dfs.createDFile();
+		byte[] input = new byte[64];
+		for (int i = 0; i < 32; i++)
+			input[8 + i] = (byte) i;
+		dfs.write(dfid, input, 8, 37);
+        assertEquals(37, dfs.sizeDFile(dfid));
+    }
+
 	@Test
 	public void testWriteOverBlockBoundary() {
 		DFileID dfid = dfs.createDFile();

@@ -113,10 +113,11 @@ public class DFS {
 		ArrayList<Integer> iNodeInfo = parseINode(dFID);
         acquireReadLock(dFID);
 		int bytesRead = 0;
-		for (int i = 1; i <= iNodeInfo.get(0); i++) {
+		for (int i = 1; i <= numBlocks(iNodeInfo.get(0)); i++) {
 			DBuffer toRead = myDBCache.getBlock(iNodeInfo.get(i));
-			bytesRead += toRead.read(buffer, startOffset + bytesRead, count
-					- bytesRead);
+			bytesRead += toRead.read(buffer,
+                                     startOffset + bytesRead,
+                                     count - bytesRead);
 			myDBCache.releaseBlock(toRead);
 			if (bytesRead >= count)
 				break;
@@ -138,9 +139,10 @@ public class DFS {
         acquireWriteLock(dFID);
         List<Integer> iNodeInfo = allocateBlocks(dFID, count);
         int bytesWritten = 0;
-        for (int i = 1; i <= iNodeInfo.get(0); i++) {
+        for (int i = 1; i <= numBlocks(iNodeInfo.get(0)); i++) {
             DBuffer block = myDBCache.getBlock(iNodeInfo.get(i));
-            bytesWritten += block.write(buffer, startOffset + bytesWritten,
+            bytesWritten += block.write(buffer,
+                                        startOffset + bytesWritten,
                                         count - bytesWritten);
 			myDBCache.releaseBlock(block);
         }
@@ -151,7 +153,9 @@ public class DFS {
 	/* returns the size in bytes of the file indicated by DFileID. */
 	public int sizeDFile(DFileID dFID) {
 		ArrayList<Integer> iNodeInfo = parseINode(dFID);
-		return iNodeInfo.get(0) * Constants.BLOCK_SIZE;
+		System.out.println(dFID.id());
+		System.out.println(iNodeInfo.get(0));
+		return iNodeInfo.get(0);
 	}
 
 	/*
@@ -185,7 +189,7 @@ public class DFS {
 
 		for (int i = 1; i <= Constants.NUM_OF_INODES; i++) {
 			ArrayList<Integer> iNodeInfo = parseINode(new DFileID(i));
-			if (iNodeInfo.get(0) == 0) {
+			if (iNodeInfo.get(0) == -1) {
 				myFreeINodes.add(i);
 			}
             else {
@@ -226,8 +230,8 @@ public class DFS {
 
 	private void writeINode(DFileID dFID, List<Integer> iNodeInfo) {
 		ByteBuffer b = ByteBuffer.allocate(Constants.INODE_SIZE);
-        int numBlocks = iNodeInfo.get(0);
-        b.putInt(numBlocks);
+        int numBlocks = numBlocks(iNodeInfo.get(0));
+        b.putInt(iNodeInfo.get(0));
         for (int i = 1; i <= numBlocks; i++) {
             b.putInt(iNodeInfo.get(i));
         }
@@ -241,14 +245,11 @@ public class DFS {
 		myDBCache.releaseBlock(inode);
 	}
 
-
     private synchronized List<Integer> allocateBlocks(DFileID dFID, int count) {
 		ArrayList<Integer> iNodeInfo = parseINode(dFID);
-        int currentBlocks = iNodeInfo.get(0);
-        int numBlocks = count / Constants.BLOCK_SIZE +
-            (count % Constants.BLOCK_SIZE == 0 ? 0 : 1);
-        numBlocks = Math.max(1, numBlocks);
-        iNodeInfo.set(0, numBlocks);
+        int currentBlocks = numBlocks(iNodeInfo.get(0));
+        int numBlocks = numBlocks(count);
+        iNodeInfo.set(0, count);
 
         if (numBlocks < currentBlocks) {
             for (int i = currentBlocks - numBlocks; i < currentBlocks; i++) {
@@ -262,11 +263,17 @@ public class DFS {
                 iNodeInfo.set(i + 1, newBlock);
             }
         }
-        if (numBlocks != currentBlocks) {
-            writeINode(dFID, iNodeInfo);
-        }
+        writeINode(dFID, iNodeInfo);
         return iNodeInfo;
     }
+
+    private int numBlocks(int bytes) {
+        return bytes / Constants.BLOCK_SIZE +
+            (bytes % Constants.BLOCK_SIZE == 0 ? 0 : 1);
+    }
+
+
+    /*************** Read-Write Lock Methods ****************/
 
     private synchronized boolean acquireReadLock(DFileID dFID)
     {
