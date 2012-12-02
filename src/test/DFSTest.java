@@ -47,10 +47,8 @@ public class DFSTest {
 		dfs.write(dfid, input, 8, 32);
 
 		byte[] output = new byte[64];
-		dfs.read(dfid, output, 0, 64);
-		System.out.println(Arrays.toString(input));
-		System.out.println(Arrays.toString(output));
-		assertEquals(input, output);
+		dfs.read(dfid, output, 8, 56);
+		assertArrayEquals(input, output);
 	}
 
 	@Test
@@ -63,7 +61,7 @@ public class DFSTest {
 
 		byte[] output = new byte[2 * Constants.BLOCK_SIZE];
 		dfs.read(dfid, output, 0, 2 * Constants.BLOCK_SIZE);
-		assertEquals(input, output);
+		assertArrayEquals(input, output);
 	}
 
 	@Test

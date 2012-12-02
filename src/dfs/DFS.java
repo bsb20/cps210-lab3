@@ -151,7 +151,7 @@ public class DFS {
 	/* returns the size in bytes of the file indicated by DFileID. */
 	public int sizeDFile(DFileID dFID) {
 		ArrayList<Integer> iNodeInfo = parseINode(dFID);
-		return iNodeInfo.get(0)*Constants.BLOCK_SIZE;
+		return iNodeInfo.get(0) * Constants.BLOCK_SIZE;
 	}
 
 	/*
@@ -248,7 +248,7 @@ public class DFS {
         int numBlocks = count / Constants.BLOCK_SIZE +
             (count % Constants.BLOCK_SIZE == 0 ? 0 : 1);
         numBlocks = Math.max(1, numBlocks);
-        iNodeInfo.add(0, numBlocks);
+        iNodeInfo.set(0, numBlocks);
 
         if (numBlocks < currentBlocks) {
             for (int i = currentBlocks - numBlocks; i < currentBlocks; i++) {
@@ -259,7 +259,7 @@ public class DFS {
             for (int i = currentBlocks; i < numBlocks; i++) {
                 Integer newBlock = myFreeBlocks.first();
                 myFreeBlocks.remove(newBlock);
-                iNodeInfo.add(i + 1, newBlock);
+                iNodeInfo.set(i + 1, newBlock);
             }
         }
         if (numBlocks != currentBlocks) {
