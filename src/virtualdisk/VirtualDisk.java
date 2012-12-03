@@ -111,7 +111,7 @@ public class VirtualDisk implements IVirtualDisk {
 	 * device/disk/volume
 	 */
 	private int readBlock(DBuffer buf) throws IOException {
-		int seekLen = (new DFileID(buf.getBlockID())).block() * Constants.BLOCK_SIZE;
+		int seekLen = buf.getBlockID() * Constants.BLOCK_SIZE;
 		/* Boundary check */
 		if (_maxVolSize < seekLen + Constants.BLOCK_SIZE) {
 			return -1;
@@ -125,7 +125,7 @@ public class VirtualDisk implements IVirtualDisk {
 	 * device/disk/volume
 	 */
 	private void writeBlock(DBuffer buf) throws IOException {
-		int seekLen = (new DFileID(buf.getBlockID())).block() * Constants.BLOCK_SIZE;
+		int seekLen = buf.getBlockID() * Constants.BLOCK_SIZE;
 		_file.seek(seekLen);
 		_file.write(buf.getBuffer(), 0, Constants.BLOCK_SIZE);
 	}

@@ -58,21 +58,18 @@ public class PersistenceTests {
 	
 	@Test
 	public void testPersistenceOfFiles() {
-		for (DFileID id : dfs.listAllDFiles())
-			System.out.println(id.id());
 		assertEquals(1, dfs.listAllDFiles().size());
 	}
 	
 	@Test
 	public void testPersistenceOfReads() {
-		DFileID dfid = dfs.createDFile();
+		DFileID dfid = new DFileID(1);
 		byte[] input = new byte[64];
 		for (int i = 0; i < 32; i++)
 			input[8 + i] = (byte) i;
 
 		byte[] output = new byte[64];
 		dfs.read(dfid, output, 8, 56);
-		System.out.println(Arrays.toString(output));
 		assertArrayEquals(input, output);
 	}
 	

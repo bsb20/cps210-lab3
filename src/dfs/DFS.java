@@ -120,7 +120,7 @@ public class DFS {
 		ArrayList<Integer> iNodeInfo = parseINode(dFID);
 		int bytesRead = 0;
 		for (int i = 1; i <= numBlocks(iNodeInfo.get(0)); i++) {
-			DBuffer toRead = myDBCache.getBlock(iNodeInfo.get(i));
+			DBuffer toRead = myDBCache.getBlock((new DFileID(iNodeInfo.get(i))).block());
 			bytesRead += toRead.read(buffer,
                                      startOffset + bytesRead,
                                      count - bytesRead);
@@ -146,7 +146,7 @@ public class DFS {
         List<Integer> iNodeInfo = allocateBlocks(dFID, count);
         int bytesWritten = 0;
         for (int i = 1; i <= numBlocks(iNodeInfo.get(0)); i++) {
-            DBuffer block = myDBCache.getBlock(iNodeInfo.get(i));
+            DBuffer block = myDBCache.getBlock((new DFileID(iNodeInfo.get(i))).block());
             bytesWritten += block.write(buffer,
                                         startOffset + bytesWritten,
                                         count - bytesWritten);

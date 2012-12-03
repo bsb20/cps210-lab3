@@ -58,7 +58,6 @@ public class DFSThreadedTests {
                         ByteBuffer b = ByteBuffer.allocate(4);
                         b.putInt(contents);
                         dfs.write(dFID, b.array(), 0, 4);
-                        //System.out.println(j);
                     }
                 };
             threads[i].start();
@@ -82,7 +81,6 @@ public class DFSThreadedTests {
                         byte[] contents = new byte[4];
                         dfs.read(dFID, contents, 0, 4);
                         int value = ByteBuffer.wrap(contents).getInt();
-                        System.out.println(value);
                         assert(value == 0 || value == 42);
                     }
                 };
