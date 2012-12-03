@@ -86,7 +86,7 @@ public class DBufferCache
 	public void sync() {
         for (DBuffer block : myBlocks) {
             block.acquire();
-            if (block.checkValid() && block.checkClean()) {
+            if (block.checkValid() && !block.checkClean()) {
                 block.startPush();
                 block.waitClean();
             }

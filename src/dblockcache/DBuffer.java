@@ -1,7 +1,6 @@
 package dblockcache;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import common.Constants;
 import common.Constants.DiskOperationType;

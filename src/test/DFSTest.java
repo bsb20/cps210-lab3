@@ -45,6 +45,7 @@ public class DFSTest {
 		byte[] output = new byte[64];
 		dfs.read(dfid, output, 8, 56);
 		assertArrayEquals(input, output);
+		dfs.sync();
 	}
 
     @Test

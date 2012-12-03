@@ -10,10 +10,12 @@ package virtualdisk;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.Arrays;
 import java.util.LinkedList;
 
 import common.Constants;
 import common.Constants.DiskOperationType;
+import common.DFileID;
 
 import dblockcache.DBuffer;
 
@@ -109,7 +111,7 @@ public class VirtualDisk implements IVirtualDisk {
 	 * device/disk/volume
 	 */
 	private int readBlock(DBuffer buf) throws IOException {
-		int seekLen = buf.getBlockID() * Constants.BLOCK_SIZE;
+		int seekLen = (new DFileID(buf.getBlockID())).block() * Constants.BLOCK_SIZE;
 		/* Boundary check */
 		if (_maxVolSize < seekLen + Constants.BLOCK_SIZE) {
 			return -1;
@@ -123,8 +125,11 @@ public class VirtualDisk implements IVirtualDisk {
 	 * device/disk/volume
 	 */
 	private void writeBlock(DBuffer buf) throws IOException {
-		int seekLen = buf.getBlockID() * Constants.BLOCK_SIZE;
+		int seekLen = (new DFileID(buf.getBlockID())).block() * Constants.BLOCK_SIZE;
+		System.out.println(buf.getBlockID());
+		System.out.println((new DFileID(buf.getBlockID())).block());
 		_file.seek(seekLen);
+		System.out.println(Arrays.toString(buf.getBuffer()));
 		_file.write(buf.getBuffer(), 0, Constants.BLOCK_SIZE);
 	}
 
@@ -143,7 +148,6 @@ public class VirtualDisk implements IVirtualDisk {
 			}
 			if (next.operation == DiskOperationType.WRITE)
 				writeBlock(next.buffer);
-
 			else
 				readBlock(next.buffer);
 			next.buffer.ioComplete();
