@@ -80,7 +80,7 @@ public class VirtualDisk implements IVirtualDisk {
 	/*
 	 * Clear the contents of the disk by writing 0s to it
 	 */
-	private void formatStore() {
+	public void formatStore() {
 		byte b[] = new byte[Constants.BLOCK_SIZE * Constants.NUM_OF_BLOCKS];
 		setBuffer((byte) 0, b, Constants.BLOCK_SIZE * Constants.NUM_OF_BLOCKS);
         for (int i = 0; i < Constants.NUM_OF_INODES; i++) {

@@ -36,8 +36,7 @@ public class DFS {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
-		}// this must be wrong since need VDF to be maintained session to
-			// session?
+		}
         myDBCache = new DBufferCache(Constants.CACHE_SIZE, myVirtualDisk);
 	}
 
@@ -55,7 +54,6 @@ public class DFS {
                     try {
 						myVirtualDisk.processAllTheRequests();
 					} catch (IOException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
                 }
@@ -70,8 +68,9 @@ public class DFS {
 	 */
 
 	public boolean format() {
-		return false; // Don't think this is necessary with the VirtualDisk
-						// implementation that formatstores at bootup.
+		myVirtualDisk.formatStore();
+		initializeMData();
+		return true;
 	}
 
     public List<DFileID> listAllDFiles()
@@ -171,7 +170,7 @@ public class DFS {
 		myDBCache.sync();
 	}
 
-	/* Zeros out a block */
+	/* Zeros out an INode and resets its size to -1 */
 	private void formatINode(DFileID dFID) {
 		DBuffer iNodeToKill = myDBCache.getBlock(dFID.block());
 		byte[] blockData= new byte[Constants.BLOCK_SIZE];
@@ -192,7 +191,7 @@ public class DFS {
         }
     }
 
-	// scan VDF to form the metadata stuctures
+	/*scan VDF to form the metadata stuctures*/
 	private void initializeMData() {
 		formatFreeBlockList(); // set free block list to all free blocks
 

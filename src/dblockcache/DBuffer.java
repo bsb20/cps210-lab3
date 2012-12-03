@@ -34,10 +34,8 @@ public class DBuffer
         try {
 			myVirtualDisk.startRequest(this, DiskOperationType.READ);
 		} catch (IllegalArgumentException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
     }
@@ -49,10 +47,8 @@ public class DBuffer
         try {
 			myVirtualDisk.startRequest(this, DiskOperationType.WRITE);
 		} catch (IllegalArgumentException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
     }
