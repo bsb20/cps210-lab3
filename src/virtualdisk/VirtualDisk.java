@@ -126,10 +126,7 @@ public class VirtualDisk implements IVirtualDisk {
 	 */
 	private void writeBlock(DBuffer buf) throws IOException {
 		int seekLen = (new DFileID(buf.getBlockID())).block() * Constants.BLOCK_SIZE;
-		System.out.println(buf.getBlockID());
-		System.out.println((new DFileID(buf.getBlockID())).block());
 		_file.seek(seekLen);
-		System.out.println(Arrays.toString(buf.getBuffer()));
 		_file.write(buf.getBuffer(), 0, Constants.BLOCK_SIZE);
 	}
 
