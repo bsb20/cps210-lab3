@@ -57,6 +57,13 @@ public class PersistenceTests {
 	}
 	
 	@Test
+	public void testPersistenceOfFiles() {
+		for (DFileID id : dfs.listAllDFiles())
+			System.out.println(id.id());
+		assertEquals(1, dfs.listAllDFiles().size());
+	}
+	
+	@Test
 	public void testPersistenceOfReads() {
 		DFileID dfid = dfs.createDFile();
 		byte[] input = new byte[64];
